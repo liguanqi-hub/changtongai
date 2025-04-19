@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长通信息智能对话系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 添加Marked.js库用于Markdown渲染 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --ai-bubble: #f1f5f9;
+            --user-bubble: #3b82f6;
+            --stop-btn: #ef4444;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            background: var(--primary-blue);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-history {
+            height: 60vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #f8fafc;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            margin: 0.5rem 0;
+            padding: 1rem 1.25rem;
+            border-radius: 1.25rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .ai-message {
+            background: var(--ai-bubble);
+            margin-right: auto;
+        }
+
+        .user-message {
+            background: var(--user-bubble);
+            color: white;
+            margin-left: auto;
+        }
+
+        .input-group {
+            border-top: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            background: white;
+            position: relative;
+        }
+
+        .send-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .voice-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: transform 0.2s;
+            margin-right: 0.5rem;
+        }
+
+        .voice-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .stop-btn {
+            position: absolute;
+            left: 1.5rem;
+            top: -1.5rem;
+            background: var(--stop-btn);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s;
+            display: none;
+        }
+
+        .stop-btn:hover {
+            background: #dc2626;
+        }
+
+        .loading-dots {
+            display: inline-block;
+            font-size: 1.5rem;
+        }
+
+        .loading-dots::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        /* Markdown样式增强 */
+        .message-bubble pre {
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .message-bubble code {
+            background-color: #f8f8f8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .message-bubble blockquote {
+            border-left: 3px solid #ddd;
+            padding-left: 10px;
+            color: #666;
+            margin-left: 0;
+        }
+
+        .message-bubble table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .message-bubble th, .message-bubble td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .message-bubble th {
+            background-color: #f2f2f2;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h5 class="mb-0">长通信息智能对话系统</h5>
+        </div>
+        
+        <div class="chat-history" id="chatHistory">
+            <!-- 初始系统消息 -->
+            <div class="message-bubble ai-message">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-primary rounded-circle p-2 me-2">
+                        <i class="fas fa-robot text-white"></i>
+                    </div>
+                    <strong>长通信息智能助手</strong>
+                </div>
+                <div>您好！我是长通信息科技智能助手，有什么可以帮您？</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <button class="stop-btn" id="stopBtn" onclick="stopGeneration()">
+                <i class="fas fa-stop"></i> 停止生成
+            </button>
+            <button class="voice-btn" onclick="openVoiceChat()">
+                <i class="fas fa-phone"></i> 
+            </button>
+            <textarea id="userInput" 
+                      class="form-control me-2" 
+                      rows="1"
+                      placeholder="输入您的问题..."
+                      style="resize: none; border-radius: 0.75rem;"></textarea>
+            <button class="send-btn" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_ENDPOINT = 'https://api.siliconflow.com/v1/chat/completions'; // 请替换实际API地址
+        const MODEL_NAME = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B';
+        const API_KEY = 'sk-jsvryjytwzqbougwvsjzblwjdgsynuczgzmiilugtfektzyk';
+
+        // 配置Marked.js
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            sanitize: true // 防止XSS攻击
+        });
+
+        let controller = null; // 用于中止fetch请求
+        let isGenerating = false; // 标记是否正在生成响应
+
+        function openVoiceChat() {
+            window.open('ai语音/index.html', '_blank');
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const chatHistory = document.getElementById('chatHistory');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (!userInput.value.trim() || isGenerating) return;
+
+            // 重置中止控制器
+            controller = new AbortController();
+            isGenerating = true;
+            stopBtn.style.display = 'block';
+
+            // 添加用户消息
+            const userBubble = createMessageBubble(userInput.value, 'user');
+            chatHistory.appendChild(userBubble);
+
+            // 添加等待提示
+            const thinkingBubble = document.createElement('div');
+            thinkingBubble.className = 'message-bubble ai-message';
+            thinkingBubble.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary rounded-circle p-2 me-2">
+                        <i class="fas fa-cog fa-spin text-white"></i>
+                    </div>
+                    <span class="loading-dots">思考中</span>
+                </div>
+            `;
+            chatHistory.appendChild(thinkingBubble);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: MODEL_NAME,
+                        messages: [{
+                            role: "user",
+                            content: userInput.value
+                        }]
+                    }),
+                    signal: controller.signal
+                });
+
+                const data = await response.json();
+                thinkingBubble.remove();
+
+                // 添加AI回复，使用Marked.js渲染Markdown
+                const aiResponse = data.choices[0].message.content;
+                const aiBubble = createMessageBubble(aiResponse, 'ai');
+                chatHistory.appendChild(aiBubble);
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    thinkingBubble.innerHTML = '<div class="text-muted">生成已停止</div>';
+                } else {
+                    thinkingBubble.innerHTML = `⚠️ 请求出错：${error.message}`;
+                }
+            } finally {
+                isGenerating = false;
+                stopBtn.style.display = 'none';
+                userInput.value = '';
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+        }
+
+        function stopGeneration() {
+            if (controller && isGenerating) {
+                controller.abort();
+                isGenerating = false;
+                document.getElementById('stopBtn').style.display = 'none';
+            }
+        }
+
+        function createMessageBubble(text, sender) {
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${sender}-message`;
+            
+            bubble.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    ${sender === 'ai' ? 
+                        '<div class="bg-primary rounded-circle p-2 me-2">' + 
+                            '<i class="fas fa-robot text-white"></i>' +
+                        '</div><strong>长通信息智能助手</strong>' : 
+                        '<div class="bg-dark rounded-circle p-2 me-2">' +
+                            '<i class="fas fa-user text-white"></i>' +
+                        '</div><strong>您</strong>'}
+                </div>
+                <div>${sender === 'ai' ? marked.parse(text) : text}</div>
+            `;
+
+            return bubble;
+        }
+
+        // 自动调整输入框高度
+        document.getElementById('userInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        // 支持按Enter键发送消息，Shift+Enter换行
+        document.getElementById('userInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
