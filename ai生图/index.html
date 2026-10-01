@@ -127,8 +127,8 @@
             document.getElementById('imageResult').style.display = 'none';
             
             try {
-                const apiKey = 'sk-jsvryjytwzqbougwvsjzblwjdgsynuczgzmiilugtfektzyk'; // 替换为你的真实API密钥
-                const apiUrl = 'https://api.siliconflow.cn/v1/images/generations'; // 确认API地址
+                const apiKey = '56ccdb671c7e4be2a415f00642ca450f.doBg8JVCeYgtAHcD'; // 替换为你的真实API密钥
+                const apiUrl = 'https://open.bigmodel.cn/api/paas/v4/images/generations'; // 确认API地址
                 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -137,7 +137,7 @@
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: "Kwai-Kolors/Kolors", // 根据文档调整模型名
+                        model: "glm-image", // 根据文档调整模型名
                         prompt: prompt,
                         negative_prompt: negativePrompt || undefined,
                         width: 512, // 固定宽度
